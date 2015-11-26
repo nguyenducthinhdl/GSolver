@@ -69,7 +69,7 @@ var condition = function(list){
 var Action = function(_dir, _val){
     return {
         dir: _dir,
-        val: _val
+        content: _val
     };
 }
 
@@ -99,18 +99,18 @@ var Prob = function(_A, _B, _currentDir, _pred, _action){
         takeAction: function(action){
             var nA = this.A.slice(), nB = this.B.slice();
             if (this.currentDir === -1){
-                for(var i = 0; i < action.val.length; i++){
-                    nB.push(action.val[i]);
+                for(var i = 0; i < action.content.length; i++){
+                    nB.push(action.content[i]);
                     nA = removeArray(nA, function(v){
-                        return v.id === action.val[i].id;
+                        return v.id === action.content[i].id;
                     });
                 }
             }
             else {
-                for(var i = 0; i < action.val.length; i++){
-                    nA.push(action.val[i]);
+                for(var i = 0; i < action.content.length; i++){
+                    nA.push(action.content[i]);
                     nB = removeArray(nB, function(v){
-                        return v.id === action.val[i].id;
+                        return v.id === action.content[i].id;
                     });
                 }
             }
@@ -186,7 +186,7 @@ var printResult = function(prob){
         if (prob.actionToPred && prob.pred){
             var from =  (prob.pred.currentDir == -1)?"A":"B";
             var to = (prob.pred.currentDir == -1)?"B":"A";
-            console.log("Move from " + from + " to " + to + ": " + printAtt(prob.actionToPred.val));
+            console.log("Move from " + from + " to " + to + ": " + printAtt(prob.actionToPred.content));
         }
         console.log("B: " + printAtt(prob.B));
     }

@@ -3,14 +3,13 @@
  */
 var GSolver = require('./GSolver');
 
-var actions = [new GSolver.Action(
-    "fill",
-    null,
-    function(position, val){
-        position.hold[val.from] -= val.water;
-        position.hold[val.to] += val.water;
+var fillAction = {
+    name: 'fill',
+    do: function(position, content){
+        position.hold[content.from] -= content.water;
+        position.hold[content.to] += content.water;
     },
-    function(position, takeAction){
+    generation: function(position, takeAction){
         for(var i = 0; i < position.hold.length; i++){
             for(var j = i + 1; j < position.hold.length; j++){
                 if (position.hold[j] > 0 && position.hold[i] < position.capacity[i]){
@@ -33,19 +32,14 @@ var actions = [new GSolver.Action(
             }
         }
     }
-)
-];
-var problem = new GSolver.Problem(
-    actions,
-    {
-        hold: [1, 3, 6, 4],
-        capacity: [12, 9, 9, 9]
-    },
-    [],
-    function(position){
-        return position.hold[0] === 10;
-    }
-);
+};
+
+var problem = GSolver.createProblem({
+    hold: [1, 3, 6, 4],
+    capacity: [12, 9, 9, 9]
+}).addAction(fillAction).setGoal(function (position) {
+    return position.hold[0] == 10
+});
 
 if (problem.findSolution()){
     console.log("Find Solution");
@@ -54,13 +48,13 @@ if (problem.findSolution()){
     var s = "";
     while(printState){
         var m = "----------------\n";
-        if (printState.predAction){
-            m += "action: tranfer " + printState.predAction.val.water + " from " +
-            printState.predAction.val.from + " to " + printState.predAction.val.to + "\n";
+        if (printState.preAction){
+            m += "action: tranfer " + printState.preAction.content.water + " from " +
+            printState.preAction.content.from + " to " + printState.preAction.content.to + "\n";
         }
         m += "Current holding water: " + printState.position.hold + "\n";
         s = m + s;
-        printState = printState.predState;
+        printState = printState.preState;
     }
     console.log(s);
 }

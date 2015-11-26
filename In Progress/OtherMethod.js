@@ -98,17 +98,17 @@ var compare = function(xobj, yobj){
     *      )
     *
     * */
-var Action = function(_name, _val, _fdo, _gstate){
+var Action = function(_name, _fdo, _gstate, _val){
     return {
         name: _name,
         fdo: function(state, val){
             var position = clone(state.position);
             _fdo(position, val);
-            var newState = new State(position, state, {name: _name, val: val});
+            var newState = new State(position, state, {name: _name, content: val});
             return newState;
         },
-        val: _val,
-        gstate: function(state){
+        content: _val,
+        generation: function(state){
             var gactions = _gstate(state.position);
             var ret = [];
             for(var i = 0; i < gactions.length; i++){
@@ -122,8 +122,8 @@ var Action = function(_name, _val, _fdo, _gstate){
 var State = function(_position, _predState, _predAction){
     return {
         position: _position,
-        predState: _predState,
-        predAction: _predAction,
+        preState: _predState,
+        preAction: _predAction,
         goal: false
     }
 };
@@ -147,7 +147,7 @@ var Problem = function(actions, initState, rule, goal){
     this.statesGenerate = function(){
         var gStates = [];
         for(var akey in actions){
-            var newStates = actions[akey].gstate(me.currentState);
+            var newStates = actions[akey].generation(me.currentState);
             for(var istate in newStates){
                 var newState = newStates[istate],
                     isRule = true;
@@ -195,7 +195,6 @@ var Problem = function(actions, initState, rule, goal){
 
 var actions = [new Action(
                     "fill",
-                    null,
                     function(position, val){
                         position.hold[val.from] -= val.water;
                         position.hold[val.to] += val.water;
@@ -246,13 +245,13 @@ if (problem.findSolution()){
     var s = "";
     while(printState){
         var m = "----------------\n";
-        if (printState.predAction){
-            m += "action: tranfer " + printState.predAction.val.water + " from " +
-            printState.predAction.val.from + " to " + printState.predAction.val.to + "\n";
+        if (printState.preAction){
+            m += "action: tranfer " + printState.preAction.content.water + " from " +
+            printState.preAction.content.from + " to " + printState.preAction.content.to + "\n";
         }
         m += "Current holding water: " + printState.position.hold + "\n";
         s = m + s;
-        printState = printState.predState;
+        printState = printState.preState;
     }
     console.log(s);
 }

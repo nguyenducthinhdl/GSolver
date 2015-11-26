@@ -1,23 +1,24 @@
+'use strict'
 // @function: clone object
-var clone = function(obj){
+var clone = function (obj) {
     // clone object
     var ret = null,
         tobj = typeof obj;
-    if (tobj === 'number' || tobj === 'string'){
+    if (tobj === 'number' || tobj === 'string') {
         return obj;
     }
 
-    if (tobj === 'object'){
-        if (Array.isArray(obj)){
+    if (tobj === 'object') {
+        if (Array.isArray(obj)) {
             ret = [];
-            for(var i = 0; i < obj.length; i++){
+            for (var i = 0; i < obj.length; i++) {
                 ret.push(clone(obj[i]));
             }
             return ret;
         }
         else { // Json object
             ret = {};
-            for(var key in obj){
+            for (var key in obj) {
                 ret[key] = clone(obj[key]);
             }
         }
@@ -27,19 +28,19 @@ var clone = function(obj){
 }
 
 // @function: compare object
-var compare = function(xobj, yobj){
+var compare = function (xobj, yobj) {
     var txobj = typeof xobj,
         tyobj = typeof yobj;
-    if (txobj === tyobj){
-        if (txobj === 'string' || tyobj === 'number'){
+    if (txobj === tyobj) {
+        if (txobj === 'string' || tyobj === 'number') {
             return xobj === yobj;
         }
 
-        if (txobj === 'object'){
-            if (Array.isArray(xobj)){
-                if (xobj.length === yobj.length){
-                    for(var i = 0; i < xobj.length; i++){
-                        if (!compare(xobj[i], yobj[i])){
+        if (txobj === 'object') {
+            if (Array.isArray(xobj)) {
+                if (xobj.length === yobj.length) {
+                    for (var i = 0; i < xobj.length; i++) {
+                        if (!compare(xobj[i], yobj[i])) {
                             return false;
                         }
                     }
@@ -52,21 +53,21 @@ var compare = function(xobj, yobj){
             else {
                 // For JSon object
                 var checkKey = true;
-                for(var key in xobj){
-                    if (undefined == yobj[key]){
+                for (var key in xobj) {
+                    if (undefined === yobj[key]) {
                         checkKey = false;
                     }
                 }
 
-                for(var key in yobj){
-                    if (undefined == xobj[key]){
+                for (var key in yobj) {
+                    if (undefined === xobj[key]) {
                         checkKey = false;
                     }
                 }
 
-                if (checkKey){
-                    for(var key in xobj){
-                        if (!compare(xobj[key], yobj[key])){
+                if (checkKey) {
+                    for (var key in xobj) {
+                        if (!compare(xobj[key], yobj[key])) {
                             return false;
                         }
                     }
@@ -87,58 +88,123 @@ var compare = function(xobj, yobj){
  *      )
  *
  * */
-var Action = function(_name, _val, _fdo, _gstate){
-    return {
-        name: _name,
-        fdo: function(state, val){
-            var position = clone(state.position);
-            _fdo(position, val);
-            var newState = new State(position, state, {name: _name, val: val});
-            return newState;
-        },
-        val: _val,
-        gstate: function(state, faction){
-            _gstate(state.position, faction);
+var Action = function (input) {
+    if (undefined === input || typeof input === 'string') {
+        return {name: input};
+    }
+    else {
+        return {
+            name: input.name,
+            fdo: function (state, content) {
+                var position = clone(state.position);
+                input.do(position, content);
+                var newState = new State(
+                    position,
+                    state,
+                    {name: this.name, content: content}
+                );
+                return newState;
+            },
+            content: input.content,
+            generation: function (state, faction) {
+                input.generation(state.position, faction);
+            },
+            setDo: function (fdo) {
+                this.fdo = fdo;
+                return this;
+            },
+            setGeneration: function () {
+
+            }
         }
     }
 };
 
 /*
-*
-*   @function State
-*
-* */
-var State = function(_position, _predState, _predAction){
+ *
+ *   @function State
+ *
+ * */
+var State = function (_position, _predState, _predAction) {
     return {
         position: _position,
-        predState: _predState,
-        predAction: _predAction,
-        goal: false
+        preState: _predState,
+        preAction: _predAction,
+        goal: false,
+        heuristic: 0,
+        distance: 0,
+        nextStates: []
     }
 };
 
-var Problem = function(actions, initState, rule, goal){
-    this.initState = new State(initState, null, null);
-    this.currentState = this.initState;
+var Problem = function (input) {
     var me = this;
-    var backList = [];
+    var blackList = [];
+    if (!input.rules) {
+        me.rules = [];
+    }
+    else {
+        me.rules = input.rules;
+    }
+    if (!input.actions) {
+        me.actions = [];
+    }
+    else {
+        me.actions = input.actions;
+    }
+    if (!input.goal) {
+        me.goal = function (position) {
+            return false;
+        }
+    }
+    else {
+        me.goal = input.goal
+    }
 
-    me.belongBlackList = function(position){
-        for(var i = 0; i < backList.length; i++){
-            if (compare(position, backList[i])){
+    me.setInitState = function (initState) {
+        me.initState = new State(initState, null, null);
+        me.currentState = me.initState;
+        return me;
+    };
+
+    if (
+        undefined !== input && undefined === input.rules &&
+        undefined === input.actions && undefined === input.initState &&
+        undefined === input.goal
+    ) {
+        me.initState = input;
+    }
+    else {
+        if (undefined != input) {
+            me.initState = input.initState;
+        }
+    }
+
+    me.setInitState(me.initState);
+
+    me.setGoal = function (goal) {
+        if (undefined != goal && typeof goal === 'function') {
+            me.goal = goal;
+        }
+        return me;
+    };
+
+    me.belongBlackList = function (position) {
+        for (var i = 0; i < blackList.length; i++) {
+            if (compare(position, blackList[i])) {
                 return true;
             }
         }
         return false;
     };
 
-    me.checkRuleGoal = function(state){
-        if (goal(state)){
+    me.checkRuleGoal = function (state) {
+        if (input.goal(state)) {
             state.goal = true;
         }
         else {
-            for(var i = 0; i < rule.length; i++){
-                if (rule[i](state.position)){
+            for (var i = 0; i < me.rules.length; i++) {
+                if (me.rules[i](state.position)) {
                     return false;
                 }
             }
@@ -147,22 +213,22 @@ var Problem = function(actions, initState, rule, goal){
     }
 
     // Generate all possible states
-    this.statesGenerate = function(){
+    this.statesGenerate = function () {
         var gStates = [];
-        for(var akey in actions){
-            actions[akey].gstate(me.currentState, function(action){
-                var newState = actions[akey].fdo(me.currentState, action),
+        for (var key in me.actions) {
+            me.actions[key].generation(me.currentState, function (action) {
+                var newState = me.actions[key].fdo(me.currentState, action),
                     isRule = true;
-                if (goal(newState.position)){
+                if (me.goal(newState.position)) {
                     newState.goal = true;
                 }
                 else {
-                    for(var i = 0; i < rule.length && isRule; i++){
-                        isRule = rule[i](newState.position);
+                    for (var i = 0; i < me.rules.length && isRule; i++) {
+                        isRule = me.rules[i](newState.position);
                     }
                 }
-                if (newState.goal || (isRule && !me.belongBlackList((newState.position)))){
-                    backList.push(newState.position);
+                if (newState.goal || (isRule && !me.belongBlackList((newState.position)))) {
+                    blackList.push(newState.position);
                     gStates.push(newState);
                 }
             });
@@ -170,21 +236,30 @@ var Problem = function(actions, initState, rule, goal){
         return gStates;
     }
 
+    me.addAction = function (action) {
+        me.actions.push(createAction(action));
+        return this;
+    }
+
+    me.addRule = function (rule) {
+        me.rules.push(rule);
+        return this;
+    }
+
     // Find a solution using deep search
-    this.findSolution = function(currentState){
-        if (!currentState){
+    this.findSolution = function (currentState) {
+        if (!currentState) {
             currentState = me.initState;
         }
         me.currentState = currentState;
 
-        if (!goal(currentState.position)){
+        if (!me.goal(currentState.position)) {
             var gState = me.statesGenerate();
-            while(gState.length != 0){
+            while (gState.length != 0) {
                 var backState = gState.pop();
-                if (me.findSolution(backState)){
+                if (me.findSolution(backState)) {
                     return true;
                 }
-                delete backState;
             }
             return false;
         }
@@ -195,7 +270,17 @@ var Problem = function(actions, initState, rule, goal){
     }
 };
 
+var createAction = function (input) {
+    return new Action(input);
+};
+
+var createProblem = function (input) {
+    return new Problem(input);
+}
+
 module.exports = {
     Action: Action,
-    Problem: Problem
+    Problem: Problem,
+    createAction: createAction,
+    createProblem: createProblem
 };
