@@ -41,10 +41,13 @@ var problem = GSolver.createProblem({
     return position.hold[0] == 10
 });
 
-if (problem.findSolution()){
+//if (problem.findSolution()){
+var result = problem.findSolution(GSolver.ALGORITHM.DFS);
+//if (problem.findSolution()){
+if (result){
     console.log("Find Solution");
     // print solution
-    var printState = problem.currentState;
+    var printState = result;
     var s = "";
     while(printState){
         var m = "----------------\n";

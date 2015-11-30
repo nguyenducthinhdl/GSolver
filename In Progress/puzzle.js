@@ -31,6 +31,12 @@ var moveAction = {
     }
 };
 
+var goal = [
+    [1, 2, 3],
+    [4, 0, 5],
+    [6, 7, 8]
+];
+
 var puzzleProblem = GSolver.createProblem(
     {
         puzzle: [
@@ -41,11 +47,6 @@ var puzzleProblem = GSolver.createProblem(
         space: {x: 0, y: 1}
     }).setGoal(
     function (position) {
-        var goal = [
-            [1, 2, 3],
-            [4, 0, 5],
-            [6, 7, 8]
-        ];
         for (var i = 0; i < goal.length; i++) {
             for (var j = 0; j < goal[i].length; j++) {
                 if (goal[i][j] !== position.puzzle[i][j]) {
@@ -57,7 +58,61 @@ var puzzleProblem = GSolver.createProblem(
     }
 ).addAction(moveAction);
 
-console.log(puzzleProblem.findSolution());
+/*
+*
+*   @function: calculate the manhattan distance
+*
+* */
+var manhattanDistanceHeuristic = function (puzzleA, puzzleB) {
+    if (puzzleA.length !== puzzleB.length &&
+        puzzleA[0].length != puzzleA.length &&
+        puzzleB[0].length != puzzleB.length) {
+        throw new Error('Input is not valid');
+    }
+    else {
+        var positionA = new Array(puzzleA.length*puzzleA.length);
+        for(var i = 0; i < puzzleA.length; i++){
+            for(var j = 0; j < puzzleA[i].length; j++){
+                positionA[puzzleA[i][j]] = {
+                    x: i,
+                    y: j
+                };
+            }
+        }
+        var dRet = 0;
+        for(var i = 0; i < puzzleB.length; i++){
+            for(var j = 0; j < puzzleB[i].length; j++){
+                dRet += Math.abs(positionA[puzzleB[i][j]].x - i) +
+                Math.abs(positionA[puzzleB[i][j]].y - j);
+            }
+        }
+        return dRet;
+    }
+};
+
+var tBeginFindSolution = (new Date()).getTime();
+//console.log(puzzleProblem.aStar({
+//    cost: function(){
+//        return -1;
+//    }
+//}));
+console.log(puzzleProblem.findSolution(GSolver.ALGORITHM.ASTAR().setHeuristic(
+    function (position) {
+        return manhattanDistanceHeuristic(goal, position.puzzle);
+    }
+)));
+
+console.log("Time to BFS " + ((new Date()).getTime() - tBeginFindSolution) / 1000 + " seconds");
+
+//console.log(manhattanDistanceHeuristic([
+//    [5, 0, 1],
+//    [4, 3, 8],
+//    [6, 7, 2]
+//], [
+//    [1, 2, 3],
+//    [4, 0, 5],
+//    [6, 7, 8]
+//]));
 
 
 
