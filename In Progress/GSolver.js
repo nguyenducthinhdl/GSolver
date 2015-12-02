@@ -162,33 +162,31 @@ var ALGORITHM = {
  *
  * */
 var Action = function (input) {
-    if (undefined === input || typeof input === 'string') {
-        return {name: input};
-    }
-    else {
-        return {
-            name: input.name,
-            fdo: function (state, content) {
-                var position = clone(state.position);
-                input.do(position, content);
-                var newState = new State(
-                    position,
-                    state,
-                    {name: this.name, content: content}
-                );
-                return newState;
-            },
-            content: input.content,
-            generation: function (state, faction) {
-                input.generation(state.position, faction);
-            },
-            setDo: function (fdo) {
-                this.fdo = fdo;
-                return this;
-            },
-            setGeneration: function () {
-
-            }
+    return {
+        name: (input === undefined || typeof input === 'string') ? input : input.name,
+        do: input.do,
+        fGenerate: (input !== undefined && input.fGenerate) ? input.fGenerate : input.generation,
+        fdo: function (state, content) {
+            var position = clone(state.position);
+            this.do(position, content);
+            var newState = new State(
+                position,
+                state,
+                {name: this.name, content: content}
+            );
+            return newState;
+        },
+        content: input.content,
+        generation: function (state, faction) {
+            this.fGenerate(state.position, faction);
+        },
+        setDo: function (fdo) {
+            this.do = fdo;
+            return this;
+        },
+        setGeneration: function (generate) {
+            this.fGenerate = generate;
+            return this;
         }
     }
 };
@@ -338,7 +336,7 @@ var Problem = function (input) {
         return this;
     }
 
-    // Find a solution using deep search
+    // Find a solution
     this.findSolution = function (input) {
         input = input || {algorithm: 'BFS'};
         if (input.algorithm === 'BFS' ||
@@ -492,20 +490,32 @@ var OpenHeap = function () {
 //    console.log(iter.score.f);
 //}
 
-var states = [3, 2, 9, 7, 10, 1, 12];
-var s = {
-    hold: [1, 3, 222, 2],
-    capacity: [12, 9, 9, 9],
-    a: 'acb',
-    b: [1, 3, '4']
-};
-//console.log(states.toString().hashCode());
-console.log(hashCode(obj2string(s)));
+//var states = [3, 2, 9, 7, 10, 1, 12];
+//var s = {
+//    hold: [1, 3, 222, 2],
+//    capacity: [12, 9, 9, 9],
+//    a: 'acb',
+//    b: [1, 3, '4']
+//};
+////console.log(states.toString().hashCode());
+//console.log(hashCode(obj2string(s)));
 
-module.exports = {
+var definition = {
     Action: Action,
     Problem: Problem,
     createAction: createAction,
     createProblem: createProblem,
     ALGORITHM: ALGORITHM
 };
+
+
+if (typeof module === 'object' && typeof module.exports === 'object') {
+    module.exports = definition;
+} else if (typeof define === 'function' && define.amd) {
+    define([], definition);
+} else {
+    var exports = definition;
+    for (var key in exports) {
+        window[key] = exports[key];
+    }
+}

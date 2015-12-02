@@ -193,6 +193,7 @@ var printResult = function(prob){
 }
 
 var fn_findSolution = function (prob) {
+
     if (prob.checkSuccess()) {
         console.log("Find Solution");
         printResult(prob);
